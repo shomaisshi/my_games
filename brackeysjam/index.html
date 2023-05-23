@@ -83,15 +83,19 @@
 		{
 			// read from file
 			reader = new FileReader();
-			reader.onload = function (event) {
-				p8_dropped_cart_name = e.dataTransfer.files[0].name;
+			reader.onload = function (event)
+			{
+				p8_dropped_cart_name = 'untitled.p8';
+				if (typeof e.dataTransfer.files[0].name !== 'undefined') p8_dropped_cart_name = e.dataTransfer.files[0].name;
+				if (typeof e.dataTransfer.files[0].fileName !== 'undefined') p8_dropped_cart_name = e.dataTransfer.files[0].fileName;
 				p8_dropped_cart = reader.result;
 				// data:image/png;base64
 				e.stopPropagation();
-				e.preventDefault(); 
+				e.preventDefault();
+				codo_command = 9; // read directly from p8_dropped_cart with libb64 decoder
 			};
 			reader.readAsDataURL(e.dataTransfer.files[0]);
-			codo_command = 9; // read directly from p8_dropped_cart with libb64 decoder
+			
 		}
 		else
 		{
@@ -117,6 +121,23 @@
 		evt.stopPropagation();
 		evt.preventDefault();
 		Module.pico8DragStop();
+	}
+
+	// download (pico-8 0.2.4d web exports can save a .wav file)
+	function download_browser_file(filename, contents)
+	{
+	  var element = document.createElement('a');
+	  if (filename.substr(filename.length - 7) == ".p8.png")
+	  	element.setAttribute('href', 'data:image/png;base64,' + encodeURIComponent(contents));
+	  else if (filename.substr(filename.length - 4) == ".wav")
+	  	element.setAttribute('href', 'data:audio/x-wav;base64,' + encodeURIComponent(contents));
+	  else
+	  	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
+	  element.setAttribute('download', filename);
+	  element.style.display = 'none';
+	  document.body.appendChild(element);
+	  element.click();
+	  document.body.removeChild(element);
 	}
 	// --------------------------------------------------------------------------------------------------------------------------------
 
@@ -634,7 +655,7 @@
 
 		// install drag&drop listeners
 		{
-			let canvas = p8_document().getElementById("canvas");
+			let canvas = document.getElementById("canvas");
 			if (canvas)
 			{
 				canvas.addEventListener('dragenter', dragover, false);
@@ -872,15 +893,16 @@
 	// End of gamepad code
 
 
-	// key blocker. prevent cursor keys from scrolling page while playing cart.
-	// also don't act on M, R so that can mute / reset cart
+	// key blocker. prevent browser operations while playing cart so that PICO-8 can use those keys e.g. cursors to scroll, ctrl-r to reload
 	document.addEventListener('keydown',
 	function (event) {
 		event = event || window.event;
 		if (!p8_is_running) return;
+
 		if (pico8_state.has_focus == 1)
-			if ([32, 37, 38, 39, 40, 77, 82, 80, 9].indexOf(event.keyCode) > -1)       // block cursors, M R P, tab
+			if ([32, 37, 38, 39, 40, 77, 82, 80, 9].indexOf(event.keyCode) > -1)       // block only cursors, M R P, tab
 				if (event.preventDefault) event.preventDefault();
+
 	},{passive: false});
 
 	// when using codo_textarea to determine focus, need to explicitly hand focus back when clicking a p8_menu_button
@@ -960,7 +982,7 @@ canvas{
 
 .p8_start_button{
 	cursor:pointer;
-	background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAB20lEQVR4Ae3dwW60IBAA4HbTR/bgzXjz4EP3YEIsAvXX/oLu96VpDDuw7gwM1w8AAAAAAAAAAAAAuIGh79p/yVf1vBTSVM7gLfLbYgFQgLcvwNB3y180su0tYTyKj9aJpkdLRSs01bvqFGCc5nGaD7T1bcCyzvI/Sn0YzO2Adz8BexId6pQsWJTfUNcoOLlIbkH+YftHzSrZgnIdCQAq+7z4Ch2nuTC+J6ZwJy/WYbkFyx9d6WUP1vV131fPHZR7edoJqN5S3rcAd9z+zylAIzfq8++AsM0P5Do5d+i7umV7wgk4uf3r9q7rTsCeBP0ac2a3JueO0zz0XcVzcPsTcH7/LqmvdQ4qF2DPzy7ErJvPmQxWrEETl/CZ7vRXreMdW9CfbP/CFj55OT+8ACFZhQQVYrbJbTzRDbWg7c49FpObuD4N7Vfl6gKc3Pjl3jJO8/LRXbIPAAAAAAAAAAAAAAAAAAAAAAAAAAA06fOarxn6bnkYpzn3HMK2z8l1cjHr8T3fG635TMuPzP2Pkhs952q5XSE5NxkfzS183f/2urgG4Tlst2h8nZTDecnNzb1DRdcVYJzm8IOTBz8KOJydwtz1+PodKvpqpDuFdJSb+3Zu4QJwwwMAAAD89A2PUkqh4Ui0rAAAABB0RVh0TG9kZVBORwAyMDExMDIyMeNZtsEAAAAASUVORK5CYII=");
+	background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAADZklEQVR4Ae2dza6kIBCFp2/6kV24M+5c+NCzICEEpCwQobS/LzeTHrqo1nPqZ/sPAAAAAAAAAAAAAAAAAAAAAOCZLPN0PbgoSfWV/vxRHxhwb/GGqZZ5cn92WqSTAbnXDg/Dz+u2RxnWbT+VL/w250SaWb71EgPWbXcKRm8eHnpp0shcntASl024e2hbzpWXjyBNxSmr0okuJIksSeMHqt97BIU1nk6bSKaiPOGMig6jz9HAGas+AAAAwM/yuS/1Mk/+87rtuUNl2GHaFCE4+iqNyQXcyh81OJbv4544rVO5J4xDB2DADZsGA+B1O+Cw0ivKX7iyzFP/HqIDYns6r/QbO0BZTdVhddNfE+ky9+kGOqC4FH50Bwjl39yDnlPoJR3QVrJ127t1Q1cDlFP7NKxVHgv0M+A+1Q7nRs8x8gADGqovxPivIvXNln8nAzpMDCHesvoAAAAAAAAAAPBTfF7zJss8Cd+u244B9QoK8oW3NGHWnBhvwKk0OYndeamgdbfeaUCpFqFVV3Q01Q1jDKiWTzlwlKksGPB9kPr+Vk67wy1idv2OMUCjfqSjRsHcVBEW+48aULdsNYalMUaGjDkDilaiRsRD6e0PHxMGCEpdXNSPUH+wAae7tFTEZ0k/3oDc6PiFwje0A65Lf7reMaCseK+MIDqgvvZD3f3nivI/vGvWGCsjKJSvVSG7JM4Ps83xZ0F6r1TDRRqqH37GgJM1cJP6Zj0wYUC4BlpplDaTTQ9M7IDm0zk3ytx6N7sPuhb7rUk0AUZawcoO6Oy0nQ54pwGn4959ZaEJXtsBgge5DYEBPTxwG5gRNMYDp76pJ/wa35wVeoVJfLGnY8eIGYMNkBVf5ilSU5MhLPzcmrWwfgcb4CUQyvDQDH94ukuj66Z093wGlvzF8VKRIXTdyAgaY8CVN9e0zt0ZAAAAAAAAAAAAAAAA4Dl8Ku4s8xT+d912OcYFyCfKsNPfSm8dXjl8SE0e5VvcyDJP7if9v9ETpO8WxudODqU8PNGomfusySznKf2VU77VNqQlc6WZXOGEOXMnrbgvcw8D3NPLHqSvl56kbx4Gew+ik4YenGYWmrLJwxQb4EQP+zH3HBpx7SNUT5O3KDYg/dUrzyGsQeUGrh4vdZmb87mo2tinBwAAAAAAACjlPz8qvQTLnxtsAAAAEHRFWHRMb2RlUE5HADIwMTEwMjIx41m2wQAAAABJRU5ErkJggg==");
 	-repeat center;
 	-webkit-background-size:cover; -moz-background-size:cover; -o-background-size:cover; background-size:cover;
 }
@@ -1046,6 +1068,8 @@ canvas{
 
 			<!-- used for clipboard access & keyboard input; displayed and used by PICO-8 only once needed. can be safely removed if clipboard / key presses not needed. -->
 			<!-- (needs to be inside p8_playarea so that it still works under Chrome when fullscreened) -->
+			<!-- 0.2.5: added "display:none"; pico8.js shows on demand to avoid mac osx accent character selector // https://www.lexaloffle.com/bbs/?tid=47743 -->
+
 			<textarea id="codo_textarea" class="emscripten" style="display:none; position:absolute; left:-9999px; height:0px; overflow:hidden"></textarea>
 
 		</div> <!--p8_playarea -->
