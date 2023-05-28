@@ -54,7 +54,7 @@ class Tile {
 	set() {
 		for (let i = 0; i < this.column; i++) {
 			for (let j = 0; j < this.row; j++) {
-				this.pixels.push(new Pixel(7, this.x + (i * this.pixelWidth), this.y + (j * this.pixelHeight), this.pixelWidth, this.pixelHeight));
+				this.pixels.push(new Pixel(0, this.x + (i * this.pixelWidth), this.y + (j * this.pixelHeight), this.pixelWidth, this.pixelHeight));
 			}
 		}
 	}
